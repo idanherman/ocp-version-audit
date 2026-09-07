@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "red-hat-security": {
+      "type": "http",
+      "url": "https://security-mcp.api.redhat.com/mcp"
+    }
+  }
+}
