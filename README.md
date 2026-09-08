@@ -18,7 +18,22 @@ Queries 5 data sources and produces a visual risk report:
 
 ## Quick Start
 
-### 1. Clone this repo as your workspace
+### Option A: Install into an existing workspace
+
+In any Cursor chat, say:
+
+> "Install the OCP audit skill from https://github.com/idanherman/ocp-version-audit"
+
+The agent will download the skill files, script, and MCP config into your workspace.
+You may need to restart your Cursor session for the skill to be detected.
+
+Then say:
+
+> "Audit my OpenShift cluster for known bugs"
+
+The agent will ask you for your version(s) and environment before running anything.
+
+### Option B: Clone as a standalone workspace
 
 ```bash
 git clone https://github.com/idanherman/ocp-version-audit.git
@@ -26,16 +41,7 @@ cd ocp-version-audit
 pip install requests
 ```
 
-### 2. Open in Cursor
-
-The `.cursor/skills/ocp-zstream-audit/` directory is auto-discovered.
-
-### 3. Run the audit
-
-Tell Cursor:
-> "Audit OCP 4.16.50 for my customer on vSphere with SDN and HostNetwork routers"
-
-Or use the CLI directly:
+Open in Cursor and say "Audit my OpenShift cluster for known bugs".
 ```bash
 # Cincinnati conditional edges
 python scripts/ocp_zstream_audit.py cincinnati \
