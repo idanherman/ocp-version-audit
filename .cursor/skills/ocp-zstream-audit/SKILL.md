@@ -1,18 +1,18 @@
 ---
 name: ocp-zstream-audit
 description: >-
-  Perform a comprehensive risk audit of OpenShift z-stream versions in an upgrade path.
-  Queries Cincinnati graph, release controller changelogs, Red Hat Errata MCP, and
-  cross-version CVE data to find known bugs, unpatched CVEs, and operational risks.
-  Use when a consultant asks about known bugs in specific z-streams, upgrade risk
-  analysis, or proactive bug hunting before an OpenShift upgrade.
-disable-model-invocation: true
+  Perform a comprehensive risk audit of OpenShift z-stream versions.
+  Finds known bugs, unpatched CVEs, and operational risks by querying
+  Cincinnati graph, release controller changelogs, Red Hat Errata MCP,
+  and cross-version CVE data. Use when the user asks about known bugs
+  in OpenShift z-streams, upgrade risk analysis, version auditing,
+  proactive bug hunting, or pastes the ocp-version-audit GitHub URL.
 ---
 
-# OCP Z-Stream Upgrade Risk Audit
+# OCP Z-Stream Version Risk Audit
 
 Systematically find known bugs, unpatched CVEs, and operational risks in specific
-OpenShift z-stream versions that a customer will use during an upgrade.
+OpenShift z-stream versions — whether for upgrade planning or auditing a running cluster.
 
 ## Prerequisites
 
@@ -20,15 +20,21 @@ OpenShift z-stream versions that a customer will use during an upgrade.
 - Red Hat Security MCP server configured in `.mcp.json` (namespace: `user-red-hat-security`)
 - Internet access to `api.openshift.com` and `openshift-release.apps.ci.l2s4.p1.openshiftapps.com`
 
-## Step 1: Collect Inputs
+## Step 1: Collect Inputs (MANDATORY — do not skip)
 
-Ask the consultant for:
+STOP. Do NOT infer versions or customer configuration from open files, workspace
+context, or conversation history. Ask the user explicitly. Do not proceed to
+Step 2 until the user has confirmed their answers.
 
-1. **Upgrade path** — exact z-stream versions for masters and workers:
-   ```
-   Masters: 4.12.40 → 4.13.59 → 4.14.56 → 4.15.58 → 4.16.50
-   Workers: 4.12.40 → 4.14.56 → 4.16.50
-   ```
+Ask the user:
+
+1. **What version(s)?** — Either:
+   - An upgrade path with exact z-stream versions for masters and workers:
+     ```
+     Masters: 4.12.40 → 4.13.59 → 4.14.56 → 4.15.58 → 4.16.50
+     Workers: 4.12.40 → 4.14.56 → 4.16.50
+     ```
+   - Or a single version to audit for known bugs (e.g., "just check 4.16.50")
 2. **Target version** — which version the customer will stay on (e.g., 4.16.50)
 3. **Architecture** — amd64, arm64, ppc64le, s390x (default: amd64)
 4. **Customer environment profile**:
@@ -40,7 +46,7 @@ Ask the consultant for:
    - Disconnected: yes/no (affects ICSP/IDMS, registry mirror size)
    - Operators: ACM, ODF, CNV, Trident, Loki, etc.
    - etcd encryption: enabled/disabled
-5. **Known cases/KCS** — any previous cases the consultant wants included
+5. **Known cases/KCS** — any previous cases the user wants included
 
 ## Step 2: Run Cincinnati Graph Check
 
@@ -156,7 +162,7 @@ Create a canvas at `canvases/ocp-zstream-audit-{target_version}.canvas.tsx` with
 
 Explicitly state in the canvas what the analysis does NOT cover:
 - Red Hat internal JIRA queries (Affects Version fields for cross-version bugs)
-- KCS article discovery (no search API — consultant must bring their own)
+- KCS article discovery (no search API — user must bring their own)
 - RHCOS RPM-level diff (partially covered by errata, but not exhaustive)
 - Operator compatibility matrices (ODF, ACM, CNV version requirements)
 - TAM-level proactive bug notifications
