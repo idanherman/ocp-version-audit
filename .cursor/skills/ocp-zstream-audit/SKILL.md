@@ -26,7 +26,7 @@ STOP. Do NOT infer versions or customer configuration from open files, workspace
 context, or conversation history. Ask the user explicitly. Do not proceed to
 Step 2 until the user has confirmed their answers.
 
-Ask the user:
+Ask the user using structured questions (use AskQuestion tool if available):
 
 1. **What version(s)?** — Either:
    - An upgrade path with exact z-stream versions for masters and workers:
@@ -37,16 +37,56 @@ Ask the user:
    - Or a single version to audit for known bugs (e.g., "just check 4.16.50")
 2. **Target version** — which version the customer will stay on (e.g., 4.16.50)
 3. **Architecture** — amd64, arm64, ppc64le, s390x (default: amd64)
-4. **Customer environment profile**:
-   - Platform: BareMetal / vSphere / AWS / Azure / GCP / None
-   - CNI: OpenShiftSDN / OVNKubernetes
-   - Ingress: HostNetwork / LoadBalancerService / NodePortService
-   - Storage: ODF/Ceph / NFS / iSCSI / vSphere CSI / EBS / other
-   - Special: multus/whereabouts, EgressIP, external gateways, IPsec
-   - Disconnected: yes/no (affects ICSP/IDMS, registry mirror size)
-   - Operators: ACM, ODF, CNV, Trident, Loki, etc.
-   - etcd encryption: enabled/disabled
-5. **Known cases/KCS** — any previous cases the user wants included
+
+Then ask the environment questions below. These determine which bugs are relevant.
+The user can answer "don't know" to any — those categories will show as "conditional"
+instead of irrelevant. Explain WHY you're asking each question briefly.
+
+4. **Platform?** (determines which cloud-provider bugs are relevant)
+   - BareMetal / vSphere / AWS / Azure / GCP / OpenStack / None/Other
+5. **Network plugin?** (SDN vs OVN bugs are completely different)
+   - OpenShiftSDN / OVNKubernetes / Don't know
+6. **How does ingress/routing work?** (HostNetwork has specific bugs)
+   - HostNetwork (routers on dedicated infra nodes) / LoadBalancer / NodePort / Don't know
+7. **Is the cluster disconnected/air-gapped?** (affects registry mirror, ICSP/IDMS size bugs)
+   - Yes / No
+8. **Any of these in use?** (each has specific bug categories — check all that apply)
+   - Multus / Whereabouts IPAM / EgressIP / External gateways / IPsec
+   - ODF/Ceph storage / NFS / iSCSI
+   - ACM / CNV / Trident / Loki
+   - etcd encryption enabled
+   - None of these / Don't know
+9. **Known cases/KCS** — any previous support cases or KCS articles to include? (optional)
+
+## Filtering Rules
+
+After collecting the environment, mark each bug/CVE as relevant/conditional/irrelevant
+using this mapping. NEVER delete irrelevant findings — collapse them in the output.
+
+| User Answer | RELEVANT categories | IRRELEVANT categories |
+|-------------|--------------------|-----------------------|
+| Platform: vSphere | vsphere | aws, azure, gcp, openstack |
+| Platform: AWS | aws | vsphere, azure, gcp, openstack |
+| Platform: Azure | azure | aws, vsphere, gcp, openstack |
+| Platform: BareMetal | baremetal | aws, azure, gcp, openstack, vsphere |
+| CNI: OpenShiftSDN | sdn | ovn (except post-migration bugs) |
+| CNI: OVNKubernetes | ovn | sdn |
+| Ingress: HostNetwork | hostnetwork-ingress | loadbalancer-ingress |
+| Ingress: LoadBalancer | loadbalancer-ingress | hostnetwork-ingress |
+| Disconnected: Yes | disconnected, icsp, idms, mirror | — |
+| Multus: Yes | multus, whereabouts, secondary-network | — |
+| EgressIP: Yes | egressip | — |
+| ODF/Ceph: Yes | ceph, odf | — |
+| etcd encryption: Yes | etcd-encryption, aes-transformer | — |
+
+Anything with "hypershift" or "hostedcluster" is IRRELEVANT unless the user
+explicitly says they use HyperShift.
+
+Anything not matching any rule above stays as "conditional" (might be relevant,
+user should review).
+
+Bugs that apply to ALL clusters regardless of config (e.g., kube-apiserver cert
+expiry, MCO upgrade blocker) are always marked "relevant".
 
 ## Step 2: Run Cincinnati Graph Check
 
@@ -123,12 +163,13 @@ Categorize ALL findings by component area:
 - networking, mco, apiserver, ingress, storage, monitoring, runtime, kernel,
   certificates, upgrade, disconnected, operators, vsphere, aws, azure, gcp, other
 
-Then apply the customer profile to mark each finding as:
-- **relevant** — matches customer's platform/CNI/config
-- **conditional** — applies only if customer uses a specific feature (EgressIP, multus, etc.)
-- **irrelevant** — wrong platform, wrong CNI, hypershift-only, etc.
+Apply the **Filtering Rules** table from Step 1 to mark each finding as:
+- **relevant** — matches the user's answers
+- **conditional** — user said "don't know" or rule doesn't apply
+- **irrelevant** — contradicts user's answers (e.g., AWS bug on vSphere cluster)
 
 **NEVER discard irrelevant findings.** Collapse them in the output but keep all data.
+The canvas must have filter pills so the user can toggle between Relevant / All.
 
 ## Step 7: Identify Never-Backported Bugs
 
